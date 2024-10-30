@@ -53,7 +53,7 @@ if [ -f "$DOWNLOAD_URL_FILE" ]; then
 
     # Download the ISO file
     echo "Downloading the latest ISO..."
-    curl -L -o "$ISO_TEMP_PATH" "$CLEANED_URL"
+    wget "$ISO_TEMP_PATH" "$CLEANED_URL"
 
     if [ $? -ne 0 ]; then
         echo "Error: Failed to download the ISO."
