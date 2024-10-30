@@ -1,11 +1,12 @@
 #!/bin/bash
 
 # Setup Variables
-ISO_PATH="/opt/iso/winpe.iso"   # Path to the ISO file
-EXTRACT_DIR="/opt/iso/winpe"    # Directory to extract the ISO contents
+REPO_URL="https://github.com/AWT-Trent/NYX-RE.git"  # GitHub repository URL
+CLONE_DIR="/tmp/nyx-re-clone"  # Temporary directory to clone the repository
+ISO_PATH="/opt/iso/winpe.iso"  # Path to the ISO file
+EXTRACT_DIR="/opt/iso/winpe"   # Directory to extract the ISO contents
 MAIN_SCRIPT_PATH="/usr/local/bin/usb_writer.sh"  # Path where the main script will be installed
 DOWNLOAD_URL_FILE="download_url.txt"  # File holding the download URL
-VERSION_FILE="version.txt"  # File holding the ISO version number
 ISO_TEMP_PATH="/opt/iso/nyx_temp.iso"  # Temporary path to download the ISO
 
 # Ensure the script is being run as root
@@ -19,7 +20,7 @@ echo "Updating package lists..."
 sudo apt-get update -y
 
 echo "Installing required packages..."
-sudo apt-get install -y util-linux parted dosfstools p7zip-full curl
+sudo apt-get install -y util-linux parted dosfstools p7zip-full git curl
 
 # Check if 7z is installed correctly
 if ! command -v 7z &> /dev/null; then
@@ -27,11 +28,22 @@ if ! command -v 7z &> /dev/null; then
     exit 1
 fi
 
-# Ensure the /opt/iso directory exists
-if [ ! -d "/opt/iso" ]; then
-    echo "Creating /opt/iso directory..."
-    sudo mkdir -p /opt/iso
+# Clone the repository to fetch the latest version and download URL
+if [ -d "$CLONE_DIR" ]; then
+    echo "Removing old cloned repository..."
+    sudo rm -rf "$CLONE_DIR"
 fi
+
+echo "Cloning the latest repository from GitHub..."
+git clone "$REPO_URL" "$CLONE_DIR"
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to clone the repository."
+    exit 1
+fi
+
+# Copy the version.txt and download_url.txt from the cloned repository
+VERSION_FILE="$CLONE_DIR/version.txt"
+DOWNLOAD_URL_FILE="$CLONE_DIR/download_url.txt"
 
 # Fix the SharePoint URL format in download_url.txt
 if [ -f "$DOWNLOAD_URL_FILE" ]; then
@@ -69,8 +81,7 @@ echo "ISO extraction complete."
 
 # Create the main USB writer script
 echo "Creating main script at $MAIN_SCRIPT_PATH..."
-
-cp usb_writer.sh "$MAIN_SCRIPT_PATH"
+sudo cp "$CLONE_DIR/usb_writer.sh" "$MAIN_SCRIPT_PATH"
 
 # Make the script executable
 sudo chmod +x "$MAIN_SCRIPT_PATH"
