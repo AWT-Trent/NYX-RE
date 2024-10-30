@@ -35,7 +35,7 @@ sudo apt-get install -y util-linux parted dosfstools p7zip-full git
 echo "Cloning the latest version of the repository..."
 
 sudo rm -rf /tmp/NYX-RE
-git clone $GIT_REPO /tmp/
+git clone $GIT_REPO /tmp/NYX-RE
 chmod +x /tmp/NYX-RE/setup.sh
 
 # Check if the script is running from the expected path
