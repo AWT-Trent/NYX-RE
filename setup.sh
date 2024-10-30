@@ -32,11 +32,10 @@ sudo apt-get install -y util-linux parted dosfstools p7zip-full git
 
 # Clone the latest repository to ensure we're using the most up-to-date scripts
 echo "Cloning the latest version of the repository..."
-cd /tmp
-sudo rm -rf NYX-RE
-git clone $GIT_REPO
-cd NYX-RE
-chmod +x setup.sh
+
+sudo rm -rf /tmp/NYX-RE
+git clone $GIT_REPO /tmp/
+chmod +x /tmp/NYX-RE/setup.sh
 
 # Check if the script is running from the expected path
 if [ "$0" != "$EXPECTED_PATH" ]; then
