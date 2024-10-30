@@ -1,13 +1,13 @@
 #!/bin/bash
 
 # Setup Variables
-REPO_URL="https://github.com/AWT-Trent/NYX-RE.git"  # GitHub repository URL
-CLONE_DIR="/tmp/nyx-re-clone"  # Temporary directory to clone the repository
-ISO_PATH="/opt/iso/winpe.iso"  # Path to the ISO file
-EXTRACT_DIR="/opt/iso/winpe"   # Directory to extract the ISO contents
+ISO_PATH="/opt/iso/winpe.iso"   # Path to the ISO file
+EXTRACT_DIR="/opt/iso/winpe"    # Directory to extract the ISO contents
 MAIN_SCRIPT_PATH="/usr/local/bin/usb_writer.sh"  # Path where the main script will be installed
-DOWNLOAD_URL_FILE="download_url.txt"  # File holding the download URL
-ISO_TEMP_PATH="/opt/iso/nyx_temp.iso"  # Temporary path to download the ISO
+GIT_REPO="https://github.com/AWT-Trent/NYX-RE.git"  # Git repository URL
+VERSION_FILE="/opt/iso/version.txt"
+URL_FILE="/opt/iso/download_url.txt"
+TEMP_ISO="/opt/iso/nyx_temp.iso"
 
 # Ensure the script is being run as root
 if [ "$EUID" -ne 0 ]; then
@@ -15,56 +15,62 @@ if [ "$EUID" -ne 0 ]; then
     exit
 fi
 
+# Clear the crontab and add a reboot task to start usb_writer.sh
+echo "Clearing the crontab..."
+crontab -r
+
+echo "Writing crontab entry to start the writer script on reboot..."
+(crontab -l 2>/dev/null; echo "@reboot sudo $MAIN_SCRIPT_PATH") | crontab -
+
 # Update package lists and install necessary dependencies
 echo "Updating package lists..."
 sudo apt-get update -y
 
 echo "Installing required packages..."
-sudo apt-get install -y util-linux parted dosfstools p7zip-full git curl
+sudo apt-get install -y util-linux parted dosfstools p7zip-full git
 
-# Check if 7z is installed correctly
-if ! command -v 7z &> /dev/null; then
-    echo "Error: 7z command not found. Please install p7zip-full."
-    exit 1
+# Clone the latest repository to ensure we're using the most up-to-date scripts
+echo "Cloning the latest version of the repository..."
+cd /tmp
+sudo rm -rf NYX-RE
+git clone $GIT_REPO
+cd NYX-RE
+
+# Copy the usb_writer.sh script to the appropriate location
+echo "Copying the main USB writer script..."
+cp usb_writer.sh "$MAIN_SCRIPT_PATH"
+
+# Make the script executable
+sudo chmod +x "$MAIN_SCRIPT_PATH"
+
+# Ensure the /opt/iso directory exists
+if [ ! -d "/opt/iso" ]; then
+    echo "Creating /opt/iso directory..."
+    sudo mkdir -p /opt/iso
 fi
 
-# Clone the repository to fetch the latest version and download URL
-if [ -d "$CLONE_DIR" ]; then
-    echo "Removing old cloned repository..."
-    sudo rm -rf "$CLONE_DIR"
-fi
+# Download and extract the ISO file if versioning indicates an update
+if [ -f "$VERSION_FILE" ] && [ -f "$URL_FILE" ]; then
+    CURRENT_VERSION=$(cat "$VERSION_FILE")
+    DOWNLOAD_URL=$(cat "$URL_FILE")
 
-echo "Cloning the latest repository from GitHub..."
-git clone "$REPO_URL" "$CLONE_DIR"
-if [ $? -ne 0 ]; then
-    echo "Error: Failed to clone the repository."
-    exit 1
-fi
-
-# Copy the version.txt and download_url.txt from the cloned repository
-VERSION_FILE="$CLONE_DIR/version.txt"
-DOWNLOAD_URL_FILE="$CLONE_DIR/download_url.txt"
-
-# Fix the SharePoint URL format in download_url.txt
-if [ -f "$DOWNLOAD_URL_FILE" ]; then
-    DOWNLOAD_URL=$(cat "$DOWNLOAD_URL_FILE")
+    # Clean the download URL by removing everything after the '?' and adding "download=1"
     CLEANED_URL=$(echo "$DOWNLOAD_URL" | sed 's/\?.*/?download=1/')
-    echo "Corrected URL: $CLEANED_URL"
 
-    # Download the ISO file
-    echo "Downloading the latest ISO..."
-    wget "$ISO_TEMP_PATH" "$CLEANED_URL"
+    echo "Downloading ISO from cleaned URL: $CLEANED_URL"
 
-    if [ $? -ne 0 ]; then
-        echo "Error: Failed to download the ISO."
+    # Download the ISO to a temporary file
+    wget -O "$TEMP_ISO" "$CLEANED_URL"
+
+    if [ $? -eq 0 ]; then
+        echo "Download successful, moving to $ISO_PATH"
+        mv "$TEMP_ISO" "$ISO_PATH"
+    else
+        echo "Error downloading the ISO."
         exit 1
     fi
-
-    # Replace the old ISO with the new one
-    echo "Replacing the old ISO..."
-    sudo mv "$ISO_TEMP_PATH" "$ISO_PATH"
 else
-    echo "Error: download_url.txt not found."
+    echo "Error: Version or URL file missing."
     exit 1
 fi
 
@@ -76,23 +82,6 @@ if [ -d "$EXTRACT_DIR" ]; then
 fi
 sudo mkdir -p "$EXTRACT_DIR"
 sudo 7z x "$ISO_PATH" -o"$EXTRACT_DIR"
-
 echo "ISO extraction complete."
 
-# Create the main USB writer script
-echo "Creating main script at $MAIN_SCRIPT_PATH..."
-sudo cp "$CLONE_DIR/usb_writer.sh" "$MAIN_SCRIPT_PATH"
-
-# Make the script executable
-sudo chmod +x "$MAIN_SCRIPT_PATH"
-
-# Clear the crontab and add a reboot task to start usb_writer.sh
-echo "Clearing the crontab..."
-crontab -r
-
-echo "Writing crontab entry to start the writer script on reboot..."
-(crontab -l 2>/dev/null; echo "@reboot sudo $MAIN_SCRIPT_PATH") | crontab -
-
 echo "Setup complete! You can now run the script using: sudo $MAIN_SCRIPT_PATH"
-
-reboot
