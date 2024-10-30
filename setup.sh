@@ -5,8 +5,8 @@ ISO_PATH="/opt/iso/winpe.iso"   # Path to the ISO file
 EXTRACT_DIR="/opt/iso/winpe"    # Directory to extract the ISO contents
 MAIN_SCRIPT_PATH="/usr/local/bin/usb_writer.sh"  # Path where the main script will be installed
 GIT_REPO="https://github.com/AWT-Trent/NYX-RE.git"  # Git repository URL
-VERSION_FILE="/opt/iso/version.txt"
-URL_FILE="/opt/iso/download_url.txt"
+VERSION_FILE="version.txt"
+URL_FILE="download_url.txt"
 TEMP_ISO="/opt/iso/nyx_temp.iso"
 
 # Ensure the script is being run as root
