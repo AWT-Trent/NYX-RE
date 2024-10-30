@@ -69,6 +69,7 @@ if [ ! -d "/opt/iso" ]; then
 fi
 
 # Download and extract the ISO file if versioning indicates an update
+echo "Checking for update"
 if [ -f "$VERSION_FILE" ] && [ -f "$URL_FILE" ]; then
     NEW_VERSION=$(cat "$VERSION_FILE")
     if [ "$CURRENT_VERSION" -ne "$NEW_VERSION"]; then    

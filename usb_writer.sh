@@ -5,8 +5,8 @@ ISO_DIR="/opt/iso/winpe"  # Directory containing extracted Windows PE files
 USB_LABEL="WinPE"
 USB_WRITTEN_DEVICES=()  # Array to track devices that have been written to
 SYSTEM_DRIVES=($(lsblk -o NAME,MODEL | grep -E "/|nvme|sda|vda" | awk '{print $1}'))  # Detect system drives (excluding typical USB names)
-VERSION_FILE="/opt/iso/version.txt"
-URL_FILE="/opt/iso/download_url.txt"
+VERSION_FILE="/tmp/NYX-RE/version.txt"
+URL_FILE="/tmp/NYX-RE/download_url.txt"
 TEMP_ISO="/opt/iso/nyx_temp.iso"
 
 # Function to prepare the USB drive
