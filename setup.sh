@@ -89,6 +89,7 @@ if [ -f "$VERSION_FILE" ] && [ -f "$URL_FILE" ]; then
             echo "Error downloading the ISO."
             exit 1
         fi
+    fi
 else
     echo "Error: Version or URL file missing."
     exit 1
