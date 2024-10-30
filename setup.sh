@@ -84,4 +84,6 @@ sudo mkdir -p "$EXTRACT_DIR"
 sudo 7z x "$ISO_PATH" -o"$EXTRACT_DIR"
 echo "ISO extraction complete."
 
+cp "version.txt" "/opt/iso/version.txt"
+
 echo "Setup complete! You can now run the script using: sudo $MAIN_SCRIPT_PATH"
