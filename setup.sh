@@ -72,7 +72,7 @@ fi
 echo "Checking for update"
 if [ -f "$VERSION_FILE" ] && [ -f "$URL_FILE" ]; then
     NEW_VERSION=$(cat "$VERSION_FILE")
-    if [ "$CURRENT_VERSION" -ne "$NEW_VERSION" ]; then    
+    if [ "$CURRENT_VERSION" != "$NEW_VERSION" ]; then    
         DOWNLOAD_URL=$(cat "$URL_FILE")
 
         # Clean the download URL by removing everything after the '?' and adding "download=1"
