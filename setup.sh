@@ -9,6 +9,7 @@ VERSION_FILE="/tmp/NYX-RE/version.txt"
 URL_FILE="/tmp/NYX-RE/download_url.txt"
 TEMP_ISO="/opt/iso/nyx_temp.iso"
 EXPECTED_PATH="/tmp/NYX-RE/setup.sh"
+CURRENT_VERSION=$(cat "/tmp/NYX-RE/version.txt")
 
 # Ensure the script is being run as root
 if [ "$EUID" -ne 0 ]; then
@@ -68,24 +69,25 @@ fi
 
 # Download and extract the ISO file if versioning indicates an update
 if [ -f "$VERSION_FILE" ] && [ -f "$URL_FILE" ]; then
-    CURRENT_VERSION=$(cat "$VERSION_FILE")
-    DOWNLOAD_URL=$(cat "$URL_FILE")
+    NEW_VERSION=$(cat "$VERSION_FILE")
+    if [ "$CURRENT_VERSION" -ne "$NEW_VERSION"]; then    
+        DOWNLOAD_URL=$(cat "$URL_FILE")
 
-    # Clean the download URL by removing everything after the '?' and adding "download=1"
-    CLEANED_URL=$(echo "$DOWNLOAD_URL" | sed 's/\?.*/?download=1/')
+        # Clean the download URL by removing everything after the '?' and adding "download=1"
+        CLEANED_URL=$(echo "$DOWNLOAD_URL" | sed 's/\?.*/?download=1/')
 
-    echo "Downloading ISO from cleaned URL: $CLEANED_URL"
+        echo "Downloading ISO from cleaned URL: $CLEANED_URL"
 
-    # Download the ISO to a temporary file
-    wget -O "$TEMP_ISO" "$CLEANED_URL"
+        # Download the ISO to a temporary file
+        wget -O "$TEMP_ISO" "$CLEANED_URL"
 
-    if [ $? -eq 0 ]; then
-        echo "Download successful, moving to $ISO_PATH"
-        mv "$TEMP_ISO" "$ISO_PATH"
-    else
-        echo "Error downloading the ISO."
-        exit 1
-    fi
+        if [ $? -eq 0 ]; then
+            echo "Download successful, moving to $ISO_PATH"
+            mv "$TEMP_ISO" "$ISO_PATH"
+        else
+            echo "Error downloading the ISO."
+            exit 1
+        fi
 else
     echo "Error: Version or URL file missing."
     exit 1
