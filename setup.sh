@@ -89,21 +89,24 @@ if [ -f "$VERSION_FILE" ] && [ -f "$URL_FILE" ]; then
             echo "Error downloading the ISO."
             exit 1
         fi
+        # Extract the ISO contents
+        echo "Extracting ISO contents to $EXTRACT_DIR..."
+        if [ -d "$EXTRACT_DIR" ]; then
+            echo "Removing old extracted files..."
+            sudo rm -rf "$EXTRACT_DIR"
+        fi
+        sudo mkdir -p "$EXTRACT_DIR"
+        sudo 7z x "$ISO_PATH" -o"$EXTRACT_DIR"
+        echo "ISO extraction complete."
+
+
+
     fi
 else
     echo "Error: Version or URL file missing."
     exit 1
 fi
 
-# Extract the ISO contents
-echo "Extracting ISO contents to $EXTRACT_DIR..."
-if [ -d "$EXTRACT_DIR" ]; then
-    echo "Removing old extracted files..."
-    sudo rm -rf "$EXTRACT_DIR"
-fi
-sudo mkdir -p "$EXTRACT_DIR"
-sudo 7z x "$ISO_PATH" -o"$EXTRACT_DIR"
-echo "ISO extraction complete."
 
 cp "version.txt" "/opt/iso/version.txt"
 
