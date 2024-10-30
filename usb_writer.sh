@@ -1,93 +1,136 @@
 #!/bin/bash
 
 # Variables
-REPO_URL="https://github.com/AWT-Trent/NYX-RE.git"  # GitHub repository URL
-CLONE_DIR="/tmp/nyx-re-clone"  # Temporary directory to clone the repository
-SETUP_SCRIPT_PATH="/tmp/nyx-re-clone/setup.sh"  # Path to the setup script after recloning
-CURRENT_VERSION_FILE="/opt/iso/version.txt"  # Current version file path
-USB_MOUNT_POINT="/mnt/usb"  # Temporary mount point for USB
+ISO_DIR="/opt/iso/winpe"  # Directory containing extracted Windows PE files
+USB_LABEL="WinPE"
+USB_WRITTEN_DEVICES=()  # Array to track devices that have been written to
+SYSTEM_DRIVES=($(lsblk -o NAME,MODEL | grep -E "/|nvme|sda|vda" | awk '{print $1}'))  # Detect system drives (excluding typical USB names)
+VERSION_FILE="/opt/iso/version.txt"
+URL_FILE="/opt/iso/download_url.txt"
+TEMP_ISO="/opt/iso/nyx_temp.iso"
 
-# Ensure the script is being run as root
-if [ "$EUID" -ne 0 ]; then
-    echo "Please run as root"
-    exit
-fi
+# Function to prepare the USB drive
+prepare_usb_drive() {
+    USB_DEVICE=$1
 
-# Function to check for new version and rerun setup
-check_for_update() {
-    echo "Checking for updates..."
+    echo "Preparing USB drive: /dev/$USB_DEVICE"
 
-    # Clone the latest repository
-    if [ -d "$CLONE_DIR" ]; then
-        echo "Removing old cloned repository..."
-        sudo rm -rf "$CLONE_DIR"
+    # Create a new partition table
+    sudo parted /dev/$USB_DEVICE --script mklabel msdos
+
+    # Create a single primary partition taking up the whole drive
+    sudo parted -a optimal /dev/$USB_DEVICE mkpart primary fat32 0% 100%
+
+    # Set the boot flag on the partition
+    sudo parted /dev/$USB_DEVICE set 1 boot on
+
+    # Format the new partition to FAT32
+    sudo mkfs.vfat -F 32 -n "$USB_LABEL" /dev/${USB_DEVICE}1
+}
+
+# Function to write Windows PE to USB
+write_winpe_to_usb() {
+    USB_DEVICE=$1
+
+    echo "Writing Windows PE to the USB drive..."
+
+    # Create mount point if it doesn't exist
+    if [ ! -d /mnt ]; then
+        sudo mkdir /mnt
     fi
 
-    echo "Cloning the latest repository from GitHub..."
-    git clone "$REPO_URL" "$CLONE_DIR"
-    if [ $? -ne 0 ]; then
-        echo "Error: Failed to clone the repository."
-        exit 1
-    fi
+    # Mount the USB drive
+    sudo mount /dev/${USB_DEVICE}1 /mnt
+    
+    # Copy the Windows PE files to the USB drive
+    cp -r "$ISO_DIR"/* /mnt
 
-    # Compare versions
-    NEW_VERSION_FILE="$CLONE_DIR/version.txt"
-    if [ ! -f "$NEW_VERSION_FILE" ]; then
-        echo "Error: New version.txt file not found in cloned repository."
-        exit 1
-    fi
+    sudo umount /mnt
+    echo "Windows PE has been written to the USB drive."
+    USB_WRITTEN_DEVICES+=("$USB_DEVICE")  # Add the device to the written list
+}
 
-    if [ -f "$CURRENT_VERSION_FILE" ]; then
-        CURRENT_VERSION=$(cat "$CURRENT_VERSION_FILE")
-        NEW_VERSION=$(cat "$NEW_VERSION_FILE")
+# Function to check if a device is a system drive
+is_system_drive() {
+    USB_DEVICE=$1
 
-        if [ "$NEW_VERSION" != "$CURRENT_VERSION" ]; then
-            echo "New version detected: $NEW_VERSION (Current version: $CURRENT_VERSION)"
-            echo "Running setup to update to the latest version..."
-            sudo bash "$SETUP_SCRIPT_PATH"
-            echo "Update complete. Rebooting..."
-            sudo reboot
-        else
-            echo "No updates found. Continuing with the current version."
-        fi
+    # Check if the drive is in the list of system drives
+    if [[ " ${SYSTEM_DRIVES[@]} " =~ " ${USB_DEVICE} " ]]; then
+        return 0  # It's a system drive
     else
-        echo "Current version.txt file not found. Running initial setup..."
-        sudo bash "$SETUP_SCRIPT_PATH"
-        echo "Setup complete. Rebooting..."
-        sudo reboot
+        return 1  # It's not a system drive
     fi
 }
 
-# Function to detect and handle USB drives
-process_usb() {
-    # Detect all connected block devices (excluding the system drive)
-    for device in $(lsblk -rno NAME,TYPE | grep "disk" | awk '{print "/dev/"$1}'); do
-        # Avoid touching system drive
-        if mount | grep -q "$device"; then
-            echo "Skipping system drive: $device"
+# Function to check and update the ISO if needed
+check_and_update_iso() {
+    if [ -f "$VERSION_FILE" ] && [ -f "$URL_FILE" ]; then
+        CURRENT_VERSION=$(cat "$VERSION_FILE")
+        DOWNLOAD_URL=$(cat "$URL_FILE")
+
+        # Clean the download URL by removing everything after the '?' and adding "download=1"
+        CLEANED_URL=$(echo "$DOWNLOAD_URL" | sed 's/\?.*/?download=1/')
+
+        echo "Checking for new ISO version... (current version: $CURRENT_VERSION)"
+
+        # Download the ISO to a temporary file
+        wget -O "$TEMP_ISO" "$CLEANED_URL"
+
+        if [ $? -eq 0 ]; then
+            echo "Download successful, moving to $ISO_DIR/winpe.iso"
+            mv "$TEMP_ISO" "/opt/iso/winpe.iso"
+            echo "ISO updated successfully."
+            # Optionally extract the ISO here if needed
+        else
+            echo "Error downloading the ISO."
+            exit 1
+        fi
+    else
+        echo "Error: Version or URL file missing."
+        exit 1
+    fi
+}
+
+# Main loop to detect and process USB insertion
+while true; do
+    # Check and update ISO
+    check_and_update_iso
+
+    # Detect all connected USB block devices (excluding partitions)
+    USB_DRIVES=($(lsblk -o NAME,TYPE,TRAN | grep "disk" | grep "usb" | awk '{print $1}'))
+
+    for USB_DRIVE in "${USB_DRIVES[@]}"; do
+        # Skip system drives early
+        if is_system_drive $USB_DRIVE; then
+            echo "Skipping system drive /dev/$USB_DRIVE."
             continue
         fi
 
-        echo "USB drive detected: $device"
+        # Check if the USB has already been written to
+        if [[ " ${USB_WRITTEN_DEVICES[@]} " =~ " ${USB_DRIVE} " ]]; then
+            echo "USB drive /dev/$USB_DRIVE has already been written to. Skipping..."
+        else
+            echo "USB drive detected: /dev/$USB_DRIVE"
 
-        # Unmount and format the USB drive
-        sudo umount "$device"* &> /dev/null
-        echo "Preparing USB drive: $device"
-        sudo mkfs.vfat -F32 "$device" || { echo "Failed to format $device"; continue; }
+            # Unmount the USB drive before writing
+            sudo umount /dev/${USB_DRIVE}* 2>/dev/null
 
-        echo "USB drive $device is ready."
-        echo "Copying files from /opt/iso/winpe to the USB drive..."
-        sudo mkdir -p "$USB_MOUNT_POINT"
-        sudo mount "$device" "$USB_MOUNT_POINT"
-        sudo cp -r /opt/iso/winpe/* "$USB_MOUNT_POINT"
-        sudo sync
-        sudo umount "$USB_MOUNT_POINT"
-        echo "Files copied to USB drive $device successfully."
+            # Prepare the USB drive
+            prepare_usb_drive $USB_DRIVE
+            
+            # Write Windows PE to the USB drive
+            write_winpe_to_usb $USB_DRIVE
+        fi
     done
-}
 
-# Check for updates before proceeding
-check_for_update
+    # Clean up the list of written devices if they are unplugged
+    for written_device in "${USB_WRITTEN_DEVICES[@]}"; do
+        if ! lsblk -o NAME | grep -q "$written_device"; then
+            echo "USB drive /dev/$written_device has been unplugged. Removing from written list."
+            USB_WRITTEN_DEVICES=("${USB_WRITTEN_DEVICES[@]/$written_device}")  # Remove unplugged device
+        fi
+    done
 
-# Proceed with USB processing
-process_usb
+    # Wait for a bit before checking again
+    sleep 5
+done
