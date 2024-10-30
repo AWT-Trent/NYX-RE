@@ -94,3 +94,5 @@ echo "Writing crontab entry to start the writer script on reboot..."
 (crontab -l 2>/dev/null; echo "@reboot sudo $MAIN_SCRIPT_PATH") | crontab -
 
 echo "Setup complete! You can now run the script using: sudo $MAIN_SCRIPT_PATH"
+
+reboot
