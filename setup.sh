@@ -4,6 +4,9 @@
 ISO_PATH="/opt/iso/winpe.iso"   # Path to the ISO file
 EXTRACT_DIR="/opt/iso/winpe"    # Directory to extract the ISO contents
 MAIN_SCRIPT_PATH="/usr/local/bin/usb_writer.sh"  # Path where the main script will be installed
+DOWNLOAD_URL_FILE="download_url.txt"  # File holding the download URL
+VERSION_FILE="version.txt"  # File holding the ISO version number
+ISO_TEMP_PATH="/opt/iso/nyx_temp.iso"  # Temporary path to download the ISO
 
 # Ensure the script is being run as root
 if [ "$EUID" -ne 0 ]; then
@@ -16,7 +19,7 @@ echo "Updating package lists..."
 sudo apt-get update -y
 
 echo "Installing required packages..."
-sudo apt-get install -y util-linux parted dosfstools p7zip-full
+sudo apt-get install -y util-linux parted dosfstools p7zip-full curl
 
 # Check if 7z is installed correctly
 if ! command -v 7z &> /dev/null; then
@@ -24,16 +27,32 @@ if ! command -v 7z &> /dev/null; then
     exit 1
 fi
 
-# Create necessary directories
+# Ensure the /opt/iso directory exists
 if [ ! -d "/opt/iso" ]; then
     echo "Creating /opt/iso directory..."
     sudo mkdir -p /opt/iso
 fi
 
-# Check if the ISO file exists
-if [ ! -f "$ISO_PATH" ]; then
-    echo "Error: No ISO file found at $ISO_PATH"
-    echo "Please place the Windows PE ISO in /opt/iso/ and name it 'winpe.iso'."
+# Fix the SharePoint URL format in download_url.txt
+if [ -f "$DOWNLOAD_URL_FILE" ]; then
+    DOWNLOAD_URL=$(cat "$DOWNLOAD_URL_FILE")
+    CLEANED_URL=$(echo "$DOWNLOAD_URL" | sed 's/\?.*/?download=1/')
+    echo "Corrected URL: $CLEANED_URL"
+
+    # Download the ISO file
+    echo "Downloading the latest ISO..."
+    curl -L -o "$ISO_TEMP_PATH" "$CLEANED_URL"
+
+    if [ $? -ne 0 ]; then
+        echo "Error: Failed to download the ISO."
+        exit 1
+    fi
+
+    # Replace the old ISO with the new one
+    echo "Replacing the old ISO..."
+    sudo mv "$ISO_TEMP_PATH" "$ISO_PATH"
+else
+    echo "Error: download_url.txt not found."
     exit 1
 fi
 
