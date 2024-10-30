@@ -60,7 +60,7 @@ echo "Copying the main USB writer script..."
 cp /tmp/NYX-RE/usb_writer.sh "$MAIN_SCRIPT_PATH"
 
 # Make the script executable
-sudo chmod +x "$MAIN_SCRIPT_PATH"
+chmod +x "$MAIN_SCRIPT_PATH"
 
 # Ensure the /opt/iso directory exists
 if [ ! -d "/opt/iso" ]; then
