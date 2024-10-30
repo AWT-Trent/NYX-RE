@@ -8,6 +8,7 @@ GIT_REPO="https://github.com/AWT-Trent/NYX-RE.git"  # Git repository URL
 VERSION_FILE="/tmp/NYX-RE/version.txt"
 URL_FILE="/tmp/NYX-RE/download_url.txt"
 TEMP_ISO="/opt/iso/nyx_temp.iso"
+EXPECTED_PATH="/tmp/NYX-RE/setup.sh"
 
 # Ensure the script is being run as root
 if [ "$EUID" -ne 0 ]; then
@@ -35,6 +36,23 @@ cd /tmp
 sudo rm -rf NYX-RE
 git clone $GIT_REPO
 cd NYX-RE
+chmod +x setup.sh
+
+# Check if the script is running from the expected path
+if [ "$0" != "$EXPECTED_PATH" ]; then
+    echo "This script is not running from $EXPECTED_PATH. Starting the correct script."
+
+    # Stop the current execution and start the correct script
+    if [ -f "$EXPECTED_PATH" ]; then
+        exec "$EXPECTED_PATH"  # Replace the current process with the correct script
+    else
+        echo "Error: $EXPECTED_PATH not found."
+        exit 1
+    fi
+fi
+
+# If the script is running from the correct path, continue with the rest of the logic
+echo "Script is running from the correct path."
 
 # Copy the usb_writer.sh script to the appropriate location
 echo "Copying the main USB writer script..."
