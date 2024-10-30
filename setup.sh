@@ -56,7 +56,8 @@ echo "Script is running from the correct path."
 
 # Copy the usb_writer.sh script to the appropriate location
 echo "Copying the main USB writer script..."
-cp usb_writer.sh "$MAIN_SCRIPT_PATH"
+
+cp /tmp/NYX-RE/usb_writer.sh "$MAIN_SCRIPT_PATH"
 
 # Make the script executable
 sudo chmod +x "$MAIN_SCRIPT_PATH"
