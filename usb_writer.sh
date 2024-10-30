@@ -6,8 +6,10 @@ USB_LABEL="WinPE"
 USB_WRITTEN_DEVICES=()  # Array to track devices that have been written to
 SYSTEM_DRIVES=($(lsblk -o NAME,MODEL | grep -E "/|nvme|sda|vda" | awk '{print $1}'))  # Detect system drives (excluding typical USB names)
 VERSION_FILE="/tmp/NYX-RE/version.txt"
-URL_FILE="/tmp/NYX-RE/download_url.txt"
-TEMP_ISO="/opt/iso/nyx_temp.iso"
+
+
+GIT_REPO="https://github.com/AWT-Trent/NYX-RE.git"  # Git repository URL
+
 
 # Function to prepare the USB drive
 prepare_usb_drive() {
@@ -66,25 +68,19 @@ is_system_drive() {
 check_and_update_iso() {
     if [ -f "$VERSION_FILE" ] && [ -f "$URL_FILE" ]; then
         CURRENT_VERSION=$(cat "$VERSION_FILE")
-        DOWNLOAD_URL=$(cat "$URL_FILE")
+        
+	# Clone the latest repository to ensure we're using the most up-to-date scripts
+        echo "Cloning the latest version of the repository..."
 
-        # Clean the download URL by removing everything after the '?' and adding "download=1"
-        CLEANED_URL=$(echo "$DOWNLOAD_URL" | sed 's/\?.*/?download=1/')
-
-        echo "Checking for new ISO version... (current version: $CURRENT_VERSION)"
-
-        # Download the ISO to a temporary file
-        wget -O "$TEMP_ISO" "$CLEANED_URL"
-
-        if [ $? -eq 0 ]; then
-            echo "Download successful, moving to $ISO_DIR/winpe.iso"
-            mv "$TEMP_ISO" "/opt/iso/winpe.iso"
-            echo "ISO updated successfully."
-            # Optionally extract the ISO here if needed
-        else
-            echo "Error downloading the ISO."
-            exit 1
+        sudo rm -rf /tmp/NYX-RE
+        git clone $GIT_REPO /tmp/NYX-RE
+        chmod +x /tmp/NYX-RE/setup.sh
+	NEW_VERSION=$(cat "$VERSION_FILE")
+	if [ "$CURRENT_VERSION" != "$NEW_VERSION" ]; then    
+            exec /tmp/NYX-RE/setup.sh
         fi
+
+
     else
         echo "Error: Version or URL file missing."
         exit 1
@@ -93,8 +89,7 @@ check_and_update_iso() {
 
 # Main loop to detect and process USB insertion
 while true; do
-    # Check and update ISO
-    check_and_update_iso
+    
 
     # Detect all connected USB block devices (excluding partitions)
     USB_DRIVES=($(lsblk -o NAME,TYPE,TRAN | grep "disk" | grep "usb" | awk '{print $1}'))
