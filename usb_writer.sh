@@ -67,7 +67,7 @@ check_and_update_iso() {
 
     
     rm -rf /tmp/NYX-RE
-    git clone /tmp/ $GIT_REPO
+    git clone /tmp/NYX-RE $GIT_REPO
 
     if [ -f "$VERSION_FILE" ] && [ -f "$URL_FILE" ]; then
         CURRENT_VERSION=$(cat "$VERSION_FILE")
