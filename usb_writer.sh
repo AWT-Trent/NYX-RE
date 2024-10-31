@@ -76,7 +76,9 @@ check_and_update_iso() {
         git clone $GIT_REPO /tmp/NYX-RE
         chmod +x /tmp/NYX-RE/setup.sh
 	NEW_VERSION=$(cat "$VERSION_FILE")
-	if [ "$CURRENT_VERSION" != "$NEW_VERSION" ]; then    
+	if [ "$CURRENT_VERSION" != "$NEW_VERSION" ]; then
+            rm -f "$VERSION_FILE"
+            echo "$CURRENT_VERSION" > "$VERSION_FILE"     
             exec /tmp/NYX-RE/setup.sh
         else
             echo "No update needed."
