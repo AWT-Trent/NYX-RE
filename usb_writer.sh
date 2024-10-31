@@ -87,6 +87,8 @@ check_and_update_iso() {
     fi
 }
 
+check_and_update_iso
+
 # Main loop to detect and process USB insertion
 while true; do
     
