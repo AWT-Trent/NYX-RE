@@ -66,7 +66,7 @@ is_system_drive() {
 
 # Function to check and update the ISO if needed
 check_and_update_iso() {
-    if [ -f "$VERSION_FILE" ] && [ -f "$URL_FILE" ]; then
+    if [ -f "$VERSION_FILE" ]; then
         CURRENT_VERSION=$(cat "$VERSION_FILE")
         
 	# Clone the latest repository to ensure we're using the most up-to-date scripts
