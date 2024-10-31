@@ -78,6 +78,9 @@ check_and_update_iso() {
 	NEW_VERSION=$(cat "$VERSION_FILE")
 	if [ "$CURRENT_VERSION" != "$NEW_VERSION" ]; then    
             exec /tmp/NYX-RE/setup.sh
+        else
+            echo "No update needed."
+
         fi
 
 
