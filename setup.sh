@@ -43,6 +43,17 @@ download_and_extract_iso() {
 
 }
 
+update_repository() {
+
+# Clone the latest repository to ensure we're using the most up-to-date scripts
+echo "Cloning the latest version of the repository..."
+
+sudo rm -rf /tmp/NYX-RE
+git clone $GIT_REPO /tmp/NYX-RE
+chmod +x /tmp/NYX-RE/setup.sh
+
+}
+
 
 # Ensure the script is being run as root
 if [ "$EUID" -ne 0 ]; then
@@ -52,9 +63,7 @@ fi
 
 
 if [ -f "$VERSION_FILE" ]; then
-    CURRENT_VERSION=$(cat "/tmp/NYX-RE/version.txt")
-else
-    download_and_extract_iso
+    cp "$VERSION_FILE" "/tmp/current_version.txt"
 fi
 
 # Update package lists and install necessary dependencies
@@ -64,19 +73,7 @@ sudo apt-get update -y
 echo "Installing required packages..."
 sudo apt-get install -y util-linux parted dosfstools p7zip-full git cron
 
-# Clear the crontab and add a reboot task to start usb_writer.sh
-echo "Clearing the crontab..."
-crontab -r
-
-echo "Writing crontab entry to start the writer script on reboot..."
-(crontab -l 2>/dev/null; echo "@reboot sudo $MAIN_SCRIPT_PATH") | crontab -
-
-# Clone the latest repository to ensure we're using the most up-to-date scripts
-echo "Cloning the latest version of the repository..."
-
-sudo rm -rf /tmp/NYX-RE
-git clone $GIT_REPO /tmp/NYX-RE
-chmod +x /tmp/NYX-RE/setup.sh
+update_repository
 
 # Check if the script is running from the expected path
 if [ "$0" != "$EXPECTED_PATH" ]; then
@@ -94,6 +91,7 @@ fi
 # If the script is running from the correct path, continue with the rest of the logic
 echo "Script is running from the correct path."
 
+
 # Copy the usb_writer.sh script to the appropriate location
 echo "Copying the main USB writer script..."
 
@@ -102,11 +100,26 @@ cp /tmp/NYX-RE/usb_writer.sh "$MAIN_SCRIPT_PATH"
 # Make the script executable
 chmod +x "$MAIN_SCRIPT_PATH"
 
+# Clear the crontab and add a reboot task to start usb_writer.sh
+echo "Clearing the crontab..."
+crontab -r
+
+echo "Writing crontab entry to start the writer script on reboot..."
+(crontab -l 2>/dev/null; echo "@reboot sudo $MAIN_SCRIPT_PATH") | crontab -
+
 # Ensure the /opt/iso directory exists
 if [ ! -d "/opt/iso" ]; then
     echo "Creating /opt/iso directory..."
     sudo mkdir -p /opt/iso
 fi
+
+if [ -f "/tmp/current_version.txt" ]; then
+    DOWNLOAD_URL=$(cat "/tmp/current_version.txt")
+    rm -f "/tmp/current_version.txt"
+else
+   download_and_extract_iso
+fi
+
 
 # Download and extract the ISO file if versioning indicates an update
 echo "Checking for update"
@@ -121,7 +134,7 @@ else
 fi
 
 
-cp "version.txt" "/opt/iso/version.txt"
+
 
 echo "Setup complete! You can now run the script using: sudo $MAIN_SCRIPT_PATH"
 echo "A reboot is recommended to apply all changes."
