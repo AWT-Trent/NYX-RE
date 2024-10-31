@@ -109,3 +109,19 @@ fi
 cp "version.txt" "/opt/iso/version.txt"
 
 echo "Setup complete! You can now run the script using: sudo $MAIN_SCRIPT_PATH"
+echo "A reboot is recommended to apply all changes."
+echo "The system will reboot in 10 seconds unless you choose to cancel."
+echo "Press 'n' to cancel the reboot, or any other key to reboot immediately."
+
+# Prompt with a 30-second timeout
+read -t 10 -n 1 -r -p "Reboot now? (press 'n' to cancel): " response
+
+# Check the response
+if [[ ! $response =~ ^[Nn]$ ]]; then
+    echo "Rebooting..."
+    sudo reboot
+else
+    echo "Reboot canceled. Please reboot manually when convenient."
+fi
+
+
