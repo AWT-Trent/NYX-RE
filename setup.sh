@@ -55,7 +55,7 @@ if [ -f "$VERSION_FILE" ]; then
     CURRENT_VERSION=$(cat "/tmp/NYX-RE/version.txt")
 else
     download_and_extract_iso
-
+fi
 
 # Update package lists and install necessary dependencies
 echo "Updating package lists..."
