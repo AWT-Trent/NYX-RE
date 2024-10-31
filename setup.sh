@@ -115,7 +115,7 @@ if [ ! -d "/opt/iso" ]; then
 fi
 
 if [ -f "/tmp/current_version.txt" ]; then
-    DOWNLOAD_URL=$(cat "/tmp/current_version.txt")
+    CURRENT_VERSION=$(cat "/tmp/current_version.txt")
     rm -f "/tmp/current_version.txt"
 else
    download_and_extract_iso
@@ -133,6 +133,7 @@ else
     echo "Error: Version or URL file missing."
     exit 1
 fi
+
 
 
 
