@@ -62,7 +62,8 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 
-if [ -f "$VERSION_FILE" ]; then
+if [ -f "$VERSION_FILE" ] && [ ! -f "/tmp/current_version.txt" ]; then
+    echo "Copy current version file"
     cp "$VERSION_FILE" "/tmp/current_version.txt"
 fi
 
