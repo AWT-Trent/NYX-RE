@@ -106,7 +106,7 @@ echo "Clearing the crontab..."
 crontab -r
 
 echo "Writing crontab entry to start the writer script on reboot..."
-(crontab -l 2>/dev/null; echo "@reboot sudo $MAIN_SCRIPT_PATH") | crontab -
+(crontab -l 2>/dev/null; echo "@reboot $MAIN_SCRIPT_PATH") | crontab -
 
 # Ensure the /opt/iso directory exists
 if [ ! -d "/opt/iso" ]; then
