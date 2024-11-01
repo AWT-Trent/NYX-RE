@@ -69,7 +69,7 @@ echo "Updating package lists..."
 sudo apt-get update -y
 
 echo "Installing required packages..."
-sudo apt-get install -y util-linux parted dosfstools p7zip-full git cron
+sudo apt-get install -y util-linux parted dosfstools p7zip-full git cron psmisc
 
 update_repository
 
