@@ -119,7 +119,10 @@ echo "Checking for update"
 if [ -f "$VERSION_FILE" ] && [ -f "$URL_FILE" ]; then
     NEW_VERSION=$(cat "$VERSION_FILE")
     if [ "$CURRENT_VERSION" != "$NEW_VERSION" ]; then
+        echo "Latest version - $NEW_VERSION - update needed, running update."
         download_and_extract_iso    
+    else
+        echo "Latest version - $NEW_VERSION - already up to date"
     fi
 else
     echo "Error: repository did not clone successfully, please retry."
