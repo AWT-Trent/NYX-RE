@@ -86,6 +86,8 @@ if [ "$0" != "$EXPECTED_PATH" ]; then
     fi
 fi
 
+/tmp/NYX-RE/kill_usb_script.sh
+
 # If the script is running from the correct path, continue with the rest of the logic
 echo "Script is running from the correct path."
 
