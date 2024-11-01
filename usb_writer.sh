@@ -6,6 +6,7 @@ USB_LABEL="WinPE"
 USB_WRITTEN_DEVICES=()  # Array to track devices that have been written to
 SYSTEM_DRIVES=($(lsblk -o NAME,MODEL | grep -E "/|nvme|sda|vda" | awk '{print $1}'))  # Detect system drives (excluding typical USB names)
 VERSION_FILE="/tmp/NYX-RE/version.txt"
+CURRENT_VERSION_FILE="/opt/iso/current_version.txt"
 
 
 GIT_REPO="https://github.com/AWT-Trent/NYX-RE.git"  # Git repository URL
@@ -66,8 +67,8 @@ is_system_drive() {
 
 # Function to check and update the ISO if needed
 check_and_update_iso() {
-    if [ -f "$VERSION_FILE" ]; then
-        CURRENT_VERSION=$(cat "$VERSION_FILE")
+    if [ -f "$CURRENT_VERSION_FILE" ]; then
+        CURRENT_VERSION=$(cat "$CURRENT_VERSION_FILE")
         
 	# Clone the latest repository to ensure we're using the most up-to-date scripts
         echo "Cloning the latest version of the repository..."
@@ -76,9 +77,7 @@ check_and_update_iso() {
         git clone $GIT_REPO /tmp/NYX-RE
         chmod +x /tmp/NYX-RE/setup.sh
 	NEW_VERSION=$(cat "$VERSION_FILE")
-	if [ "$CURRENT_VERSION" != "$NEW_VERSION" ]; then
-            rm -f "$VERSION_FILE"
-            echo "$CURRENT_VERSION" > "$VERSION_FILE"     
+	if [ "$CURRENT_VERSION" != "$NEW_VERSION" ]; then     
             exec /tmp/NYX-RE/setup.sh
         else
             echo "No update needed."

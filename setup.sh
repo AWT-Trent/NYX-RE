@@ -9,6 +9,7 @@ VERSION_FILE="/tmp/NYX-RE/version.txt"
 URL_FILE="/tmp/NYX-RE/download_url.txt"
 TEMP_ISO="/opt/iso/nyx_temp.iso"
 EXPECTED_PATH="/tmp/NYX-RE/setup.sh"
+CURRENT_VERSION_FILE="/opt/iso/current_version.txt"
 
 
 
@@ -39,7 +40,8 @@ download_and_extract_iso() {
     sudo mkdir -p "$EXTRACT_DIR"
     sudo 7z x "$ISO_PATH" -o"$EXTRACT_DIR"
     echo "ISO extraction complete."
-
+    rm -f "$CURRENT_VERSION_FILE"
+    cp "$VERSION_FILE" "$CURRENT_VERSION_FILE"
 
 }
 
@@ -61,11 +63,6 @@ if [ "$EUID" -ne 0 ]; then
     exit
 fi
 
-
-if [ -f "$VERSION_FILE" ] && [ ! -f "/tmp/current_version.txt" ]; then
-    echo "Copy current version file"
-    cp "$VERSION_FILE" "/tmp/current_version.txt"
-fi
 
 # Update package lists and install necessary dependencies
 echo "Updating package lists..."
@@ -101,12 +98,7 @@ cp /tmp/NYX-RE/usb_writer.sh "$MAIN_SCRIPT_PATH"
 # Make the script executable
 chmod +x "$MAIN_SCRIPT_PATH"
 
-# Clear the crontab and add a reboot task to start usb_writer.sh
-echo "Clearing the crontab..."
-crontab -r
 
-echo "Writing crontab entry to start the writer script on reboot..."
-(crontab -l 2>/dev/null; echo "@reboot $MAIN_SCRIPT_PATH") | crontab -
 
 # Ensure the /opt/iso directory exists
 if [ ! -d "/opt/iso" ]; then
@@ -114,9 +106,9 @@ if [ ! -d "/opt/iso" ]; then
     sudo mkdir -p /opt/iso
 fi
 
-if [ -f "/tmp/current_version.txt" ]; then
-    CURRENT_VERSION=$(cat "/tmp/current_version.txt")
-    rm -f "/tmp/current_version.txt"
+if [ -f "$CURRENT_VERSION_FILE" ]; then
+    CURRENT_VERSION=$(cat "$CURRENT_VERSION_FILE")
+    echo "Current version of iso is $CURRENT_VERSION"
 else
    download_and_extract_iso
 fi
@@ -130,11 +122,16 @@ if [ -f "$VERSION_FILE" ] && [ -f "$URL_FILE" ]; then
         download_and_extract_iso    
     fi
 else
-    echo "Error: Version or URL file missing."
+    echo "Error: repository did not clone successfully, please retry."
     exit 1
 fi
 
+# Clear the crontab and add a reboot task to start usb_writer.sh
+echo "Clearing the crontab..."
+crontab -r
 
+echo "Writing crontab entry to start the writer script on reboot..."
+(crontab -l 2>/dev/null; echo "@reboot $MAIN_SCRIPT_PATH") | crontab -
 
 
 
