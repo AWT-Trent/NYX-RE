@@ -112,8 +112,6 @@ fi
 if [ -f "$CURRENT_VERSION_FILE" ]; then
     CURRENT_VERSION=$(cat "$CURRENT_VERSION_FILE")
     echo "Current version of iso is $CURRENT_VERSION"
-else
-   download_and_extract_iso
 fi
 
 
