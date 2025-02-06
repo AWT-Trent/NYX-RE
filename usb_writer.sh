@@ -17,7 +17,7 @@ prepare_usb_drive() {
     USB_DEVICE=$1
 
     echo "Preparing USB drive: /dev/$USB_DEVICE"
-    sudo umount -l /dev/$USB_DEVICE*
+    
     # Create a new partition table
     sudo parted /dev/$USB_DEVICE --script mklabel msdos
 
