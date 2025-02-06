@@ -2,7 +2,7 @@
 
 # Variables
 ISO_DIR="/opt/iso/winpe"  # Directory containing extracted Windows PE files
-USB_LABEL="Nyx "
+USB_LABEL="Nyx"
 USB_WRITTEN_DEVICES=()  # Array to track devices that have been written to
 SYSTEM_DRIVES=($(lsblk -o NAME,MODEL | grep -E "/|nvme|sda|vda" | awk '{print $1}'))  # Detect system drives (excluding typical USB names)
 VERSION_FILE="/tmp/NYX-RE/version.txt"
@@ -26,9 +26,11 @@ prepare_usb_drive() {
 
     # Set the boot flag on the partition
     sudo parted /dev/$USB_DEVICE set 1 boot on
-    CURRENT_VERSION=$(cat "$CURRENT_VERSION_FILE")
+    CURRENT_VERSION=$(cat "$CURRENT_VERSION_FILE" | tr -d '[:space:]')
+    USB_LABEL_FORMATTED=$(echo "${USB_LABEL}_${CURRENT_VERSION}" | cut -c1-11)
+    
     # Format the new partition to FAT32
-    sudo mkfs.vfat -F 32 -n "$USB_LABEL $CURRENT_VERSION" /dev/${USB_DEVICE}1
+    sudo mkfs.vfat -F 32 -n "$USB_LABEL_FORMATTED" "/dev/${USB_DEVICE}1"
 }
 
 # Function to write Windows PE to USB
