@@ -135,7 +135,7 @@ echo "Clearing the crontab..."
 crontab -r
 
 echo "Writing crontab entry to start the writer script on reboot..."
-(crontab -l 2>/dev/null; echo "@reboot screen $MAIN_SCRIPT_PATH") | crontab -
+(crontab -l 2>/dev/null; echo "@reboot /usr/bin/screen -dmS usb-writer $MAIN_SCRIPT_PATH") | crontab -
 (crontab -l 2>/dev/null; echo "0 0 * * * reboot") | crontab -
 
 
